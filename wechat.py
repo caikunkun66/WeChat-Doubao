@@ -29,14 +29,16 @@ class WeChatListener:
         EditControl(Name=who) 查找输入框而超时（群聊输入框 Name 并非群名）。
         正确做法是先用 ChatWith 切换到该会话，再不带 who 发送到当前聊天窗口。
 
-        群名里的括号（如 "xxx (5)"）会被 ChatWith 内部的正则当成捕获组导致搜不到，
-        因此先尝试原名，失败再尝试去掉尾部 " (数字)" 的名字（微信搜索结果会高亮
-        匹配部分，正则可命中完整群名）。
+        群名里的括号（如 "xxx (5)"）会被 ChatWith 内部的正则当成捕获组导致搜不到。
+        因此当群名带尾部 " (数字)" 时，先尝试去掉括号的基名（正则安全，微信搜索
+        结果会高亮匹配部分，通常能命中完整群名），失败再回退到原名（精确匹配，
+        避免同名群发错）。
         """
         candidates = [who]
         m = re.search(r"\s*\(\d+\)$", who)
         if m:
-            candidates.append(who[: m.start()])
+            # 带 (数字) 后缀：先试去括号基名，失败再试原名
+            candidates = [who[: m.start()], who]
 
         chat = None
         for name in candidates:
