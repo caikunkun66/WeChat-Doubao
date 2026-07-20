@@ -1,3 +1,5 @@
 # wxauto 未上 PyPI，需从 GitHub 源码安装（支持微信 3.9，Python 3.8~3.15）
 wxauto @ https://github.com/cluic/wxauto/archive/refs/heads/main.zip
 requests>=2.20
+# QQ 机器人（OneBot / napcat）所需 WebSocket 客户端
+websockets>=12.0

@@ -21,6 +21,7 @@ class WeChatListener:
         self.ignore_types = set(ignore_types) if ignore_types else {"sys", "time"}
         self.on_message = None  # 回调：on_message(chat_name, msg)
         self._recent = {}       # 去重缓存：(chat_name, content) -> 时间戳
+        self._last_chat = None  # 已打开的会话名缓存，避免重复切换窗口
 
     def send_message(self, content, who):
         """向指定会话发送文本消息。
@@ -49,11 +50,10 @@ class WeChatListener:
                 chat = False
             if chat:
                 break
-            time.sleep(0.3)  # 失败后稍等再试下一个候选名
 
         if not chat:
             raise RuntimeError(f"无法打开会话：{who}")
-        time.sleep(0.5)  # 等待会话窗口加载完成
+        time.sleep(0.15)  # 等待会话窗口加载完成
         self.wx.SendMsg(content)
 
     def _should_ignore(self, msg):

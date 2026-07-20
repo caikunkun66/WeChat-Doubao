@@ -27,6 +27,12 @@ MAX_RETRIES = 3                    # API 调用最大重试次数（仅对网络
 RETRY_BACKOFF = 2                  # 重试退避基数（秒），第 n 次等待 RETRY_BACKOFF * n 秒
 MAX_HISTORY_TURNS = 10             # 每个会话保留的最近对话轮数（1 轮 = 用户+豆包各 1 条）
 
+# ===== OneBot（QQ）配置 =====
+# napcat 正向 WebSocket 地址（napcat 作为服务端，本程序连入）。
+# 默认路径以你 napcat 配置为准，常见为 ws://127.0.0.1:6700 或 /onebot/v11/ws。
+ONEBOT_WS_URL = os.getenv("ONEBOT_WS_URL", "ws://127.0.0.1:6700")
+ONEBOT_TOKEN = os.getenv("ONEBOT_TOKEN", "")   # napcat 若设了 access_token 则填，否则留空
+
 # ===== 豆包人设（系统提示词）=====
 # 设定为群聊里的一名女生朋友，语气自然、活泼、爱用表情，偶尔皮一下。
 SYSTEM_PROMPT = (

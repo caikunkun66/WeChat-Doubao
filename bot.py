@@ -7,12 +7,12 @@ import re
 
 from wechat import WeChatListener, SRC_MAP
 from doubao import DoubaoClient
-from config import AUTO_REPLY, BOT_NAME, MAX_HISTORY_TURNS
+from config import AUTO_REPLY, BOT_NAME, MAX_HISTORY_TURNS, POLL_INTERVAL
 
 
 class WeChatBot:
     def __init__(self, auto_reply=AUTO_REPLY):
-        self.listener = WeChatListener()
+        self.listener = WeChatListener(poll_interval=POLL_INTERVAL)
         self.doubao = DoubaoClient()
         self.auto_reply = auto_reply
         # 按会话（群名/单聊名）维护一份共享记忆：群内所有群友共用同一记忆线，
