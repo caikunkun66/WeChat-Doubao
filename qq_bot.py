@@ -22,6 +22,7 @@ from config import (
     MAX_HISTORY_TURNS,
     ONEBOT_WS_URL,
     ONEBOT_TOKEN,
+    USER_PROMPTS,
 )
 
 # 日志：同时写控制台与 qq_bot.log。
@@ -91,6 +92,8 @@ class QQBot:
         params = {"message_type": event.get("message_type")}
         if event.get("message_type") == "group":
             params["group_id"] = event.get("group_id")
+            # 真实 @ 回复：在群聊里用 CQ 码 @ 回发送者，而不是仅文本「@xxx」
+            text = f"[CQ:at,qq={event.get('user_id')}]\n{text}"
         else:
             params["user_id"] = event.get("user_id")
         params["message"] = text
@@ -108,11 +111,12 @@ class QQBot:
             self._self_id = event.get("self_id")
 
         chat_key = self._chat_key(event)
-        sender = event.get("sender", {}).get("nickname") or str(event.get("user_id"))
+        user_id = event.get("user_id")
+        sender = event.get("sender", {}).get("nickname") or str(user_id)
         is_group = event.get("message_type") == "group"
         text = self._extract_text(event.get("message", ""))
 
-        log.info("来自: %s（会话: %s）内容: %s", sender, chat_key, text)
+        log.info("来自: %s（QQ:%s，会话: %s）内容: %s", sender, user_id, chat_key, text)
 
         if not self.auto_reply:
             return
@@ -129,8 +133,10 @@ class QQBot:
             return
 
         # 豆包调用是阻塞的网络请求，丢到线程池执行以免卡住事件循环
+        # 若存在该 QQ 的专属提示词（USER_PROMPTS），追加到系统提示词之后
+        extra = USER_PROMPTS.get(str(user_id)) if user_id is not None else None
         reply = await asyncio.get_event_loop().run_in_executor(
-            None, self.doubao.get_reply, text, self.history.get(chat_key)
+            None, self.doubao.get_reply, text, self.history.get(chat_key), extra
         )
         if reply:
             try:

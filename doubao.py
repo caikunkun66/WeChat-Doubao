@@ -36,11 +36,12 @@ class DoubaoClient:
         self.backoff = backoff
         self.system_prompt = system_prompt
 
-    def get_reply(self, user_text, history=None):
+    def get_reply(self, user_text, history=None, extra_system=None):
         """调用豆包 Responses API，返回助手回复文本；失败返回 None。
 
         history: 可选的历史轮次列表，每项为 {"role": "user"/"assistant", "content": "文本"}，
                  按时间顺序拼接在系统提示词之后、当前用户消息之前，实现多轮上下文。
+        extra_system: 可选的额外系统提示词（如针对具体 QQ 的专属指令），拼在通用人设之后。
         对网络/超时/5xx 错误自动重试（指数退避）；4xx（如鉴权失败）不重试。
         """
         headers = {
@@ -53,6 +54,11 @@ class DoubaoClient:
             input_messages.append({
                 "role": "system",
                 "content": [{"type": "input_text", "text": self.system_prompt}],
+            })
+        if extra_system:
+            input_messages.append({
+                "role": "system",
+                "content": [{"type": "input_text", "text": extra_system}],
             })
         for turn in (history or []):
             role = turn.get("role", "user")
