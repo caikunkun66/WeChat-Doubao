@@ -36,18 +36,33 @@ class DoubaoClient:
         self.backoff = backoff
         self.system_prompt = system_prompt
 
-    def get_reply(self, user_text, history=None, extra_system=None):
+    def get_reply(self, user_text, history=None, extra_system=None, user_images=None):
         """调用豆包 Responses API，返回助手回复文本；失败返回 None。
 
-        history: 可选的历史轮次列表，每项为 {"role": "user"/"assistant", "content": "文本"}，
+        history: 可选的历史轮次列表，每项为 {"role": "user"/"assistant",
+                 "content": "文本", "images": [可选, 图片 data URL 列表]}，
                  按时间顺序拼接在系统提示词之后、当前用户消息之前，实现多轮上下文。
         extra_system: 可选的额外系统提示词（如针对具体 QQ 的专属指令），拼在通用人设之后。
+        user_images: 可选，当前消息附带的图片 data URL 列表（多模态理解用）。
         对网络/超时/5xx 错误自动重试（指数退避）；4xx（如鉴权失败）不重试。
         """
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+
+        def _content_blocks(text, images):
+            """把文本 + 图片拼成 Responses API 的 content 块列表（input_text / input_image）。"""
+            blocks = []
+            if text:
+                blocks.append({"type": "input_text", "text": text})
+            for img in (images or []):
+                # 图片以 base64 data URL 形式内联，方舟无需外网可访问该图
+                blocks.append({"type": "input_image", "image_url": img})
+            if not blocks:
+                blocks.append({"type": "input_text", "text": text or ""})
+            return blocks
+
         # 系统提示词（人设）放在最前，之后是历史轮次，最后是当前用户消息
         input_messages = []
         if self.system_prompt:
@@ -63,14 +78,14 @@ class DoubaoClient:
         for turn in (history or []):
             role = turn.get("role", "user")
             text = turn.get("content", "")
-            if text:
-                input_messages.append({
-                    "role": role,
-                    "content": [{"type": "input_text", "text": text}],
-                })
+            images = turn.get("images") or []
+            input_messages.append({
+                "role": role,
+                "content": _content_blocks(text, images),
+            })
         input_messages.append({
             "role": "user",
-            "content": [{"type": "input_text", "text": user_text}],
+            "content": _content_blocks(user_text, user_images),
         })
         payload = {
             "model": self.model,
